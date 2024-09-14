@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual Environment
+venv/
+env/
+
+# IDEs
+.vscode/
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Credentials
+*.pem
+*.key
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
