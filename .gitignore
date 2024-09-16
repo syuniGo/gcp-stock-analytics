@@ -29,3 +29,7 @@ Thumbs.db
 
 # doc
 doc/
+app/
+cloudbeaver/
+postgres_data/
+files/

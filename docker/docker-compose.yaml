@@ -1,0 +1,46 @@
+networks:
+  financial_net:
+    name: financial_net
+
+services:
+  pgdatabase:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=financial_data
+    volumes:
+      - "./postgres_data:/var/lib/postgresql/data:rw"
+    ports:
+      - "5432:5432"
+    networks:
+      - financial_net
+
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:24
+    restart: always
+    ports:
+      - '8978:8978'
+    volumes: 
+      - ./cloudbeaver:/opt/cloudbeaver/workspace
+    networks:
+      - financial_net
+
+  ingest_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - pgdatabase
+    volumes:
+      - ./app:/app
+    environment:
+      - DB_HOST=pgdatabase
+      - DB_PORT=5432
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=financial_data
+    networks:
+      - financial_net
+    tty: true
+    stdin_open: true
