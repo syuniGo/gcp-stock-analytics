@@ -1,6 +1,17 @@
+
 networks:
-  financial_net:
-    name: financial_net
+  data_net:
+    name: data_net
+
+volumes:
+  postgres_data:
+    driver: local
+  shared-workspace:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./shared_workspace
 
 services:
   pgdatabase:
@@ -10,11 +21,11 @@ services:
       - POSTGRES_PASSWORD=root
       - POSTGRES_DB=financial_data
     volumes:
-      - "./postgres_data:/var/lib/postgresql/data:rw"
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
-      - financial_net
+      - data_net
 
   cloudbeaver:
     image: dbeaver/cloudbeaver:24
@@ -24,7 +35,50 @@ services:
     volumes: 
       - ./cloudbeaver:/opt/cloudbeaver/workspace
     networks:
-      - financial_net
+      - data_net
+
+  spark-master:
+    image: spark-master
+    container_name: spark-master
+    environment:
+      SPARK_LOCAL_IP: 'spark-master'
+    ports:
+      - 3380:8080
+      - 7077:7077
+    volumes:
+      - shared-workspace:/opt/workspace
+    networks:
+      - data_net
+
+  spark-worker-1:
+    image: spark-worker
+    container_name: spark-worker-1
+    environment:
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=4g
+    ports:
+      - 8083:8081
+    volumes:
+      - shared-workspace:/opt/workspace
+    depends_on:
+      - spark-master
+    networks:
+      - data_net
+
+  spark-worker-2:
+    image: spark-worker
+    container_name: spark-worker-2
+    environment:
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=4g
+    ports:
+      - 8084:8081
+    volumes:
+      - shared-workspace:/opt/workspace
+    networks:
+      - data_net
+    depends_on:
+      - spark-master
 
   ingest_app:
     build:
@@ -32,15 +86,20 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - pgdatabase
+      - spark-master
     volumes:
       - ./app:/app
+      - shared-workspace:/opt/workspace
     environment:
       - DB_HOST=pgdatabase
       - DB_PORT=5432
       - DB_USER=root
       - DB_PASSWORD=root
       - DB_NAME=financial_data
+      - SPARK_MASTER=spark://spark-master:7077
+      - PYSPARK_PYTHON=/usr/local/bin/python
+      - PYSPARK_DRIVER_PYTHON=/usr/local/bin/python
     networks:
-      - financial_net
+      - data_net
     tty: true
     stdin_open: true

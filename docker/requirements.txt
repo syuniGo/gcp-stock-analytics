@@ -130,3 +130,5 @@ websocket-client==1.8.0
 widgetsnbextension==4.0.11
 yfinance==0.2.40
 sqlalchemy==2.0.34
+psycopg2-binary==2.9.9
+pyspark==3.5.2
